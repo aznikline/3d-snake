@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using NeonSerpent.Core;
@@ -24,6 +25,8 @@ namespace NeonSerpent.Gameplay
 
         [Header("Audio")]
         [SerializeField] private AudioClip deathSFX;
+
+        public event Action OnDeath;
 
         private bool _isDead;
         private Vector3 _deathPosition;
@@ -81,6 +84,7 @@ namespace NeonSerpent.Gameplay
             _respawnPosition = checkPoint != null ? checkPoint.position : Vector3.zero;
 
             GameStateManager.Instance.ChangeState(GameState.Dead);
+            OnDeath?.Invoke();
 
             // Audio
             if (deathSFX != null)
