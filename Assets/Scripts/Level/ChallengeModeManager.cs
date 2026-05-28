@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using NeonSerpent.Core;
 using NeonSerpent.Player;
+using NeonSerpent.Gameplay;
 
 namespace NeonSerpent.Level
 {

@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using NeonSerpent.Core;
 using NeonSerpent.Player;
 using NeonSerpent.Gameplay;
+using NeonSerpent.Audio;
 
 namespace NeonSerpent.Level
 {

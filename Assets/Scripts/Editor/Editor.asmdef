@@ -1,0 +1,19 @@
+{
+    "name": "Editor",
+    "rootNamespace": "NeonSerpent.Editor",
+    "references": [
+        "Scripts",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

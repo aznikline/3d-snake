@@ -1,4 +1,5 @@
 using UnityEngine;
+using NeonSerpent.Core;
 
 namespace NeonSerpent.Level
 {
@@ -56,7 +57,7 @@ namespace NeonSerpent.Level
         /// <summary>
         /// Full level number (e.g., "Zone 1-5").
         /// </summary>
-        public string FullLevelName => $"{zone.DisplayName} - {zoneOrder}";
+        public string FullLevelName => $"{zone.DisplayName()} - {zoneOrder}";
 
         /// <summary>
         /// Unique key for save data and leaderboards.

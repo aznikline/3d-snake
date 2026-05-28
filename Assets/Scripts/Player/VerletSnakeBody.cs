@@ -134,15 +134,18 @@ namespace NeonSerpent.Player
         private void Simulate(float dt)
         {
             // Pin head to controller position
-            _nodes[0].Position = _headPosition;
+            var headNode = _nodes[0];
+            headNode.Position = _headPosition;
+            _nodes[0] = headNode;
 
             // Verlet integration for all other nodes
             for (int i = 1; i < _nodes.Count; i++)
             {
-                ref var node = ref _nodes[i];
+                var node = _nodes[i];
                 Vector3 velocity = (node.Position - node.PreviousPosition) * damping;
                 node.PreviousPosition = node.Position;
                 node.Position += velocity + Vector3.up * gravity * dt * dt;
+                _nodes[i] = node;
             }
         }
 
@@ -166,8 +169,8 @@ namespace NeonSerpent.Player
 
         private void SolveDistanceConstraint(int indexA, int indexB)
         {
-            ref var nodeA = ref _nodes[indexA];
-            ref var nodeB = ref _nodes[indexB];
+            var nodeA = _nodes[indexA];
+            var nodeB = _nodes[indexB];
 
             Vector3 delta = nodeB.Position - nodeA.Position;
             float currentDistance = delta.magnitude;
@@ -181,16 +184,18 @@ namespace NeonSerpent.Player
             if (indexA != 0)
             {
                 nodeA.Position += correction * 0.5f;
+                _nodes[indexA] = nodeA;
             }
 
             nodeB.Position -= correction * 0.5f;
+            _nodes[indexB] = nodeB;
         }
 
         private void ResolveCollisions()
         {
             for (int i = 1; i < _nodes.Count; i++)
             {
-                ref var node = ref _nodes[i];
+                var node = _nodes[i];
 
                 if (Physics.SphereCast(
                     node.Position + Vector3.up * node.Radius,
@@ -205,6 +210,7 @@ namespace NeonSerpent.Player
                     if (penetration > 0)
                     {
                         node.Position += hit.normal * penetration;
+                        _nodes[i] = node;
                     }
                 }
             }

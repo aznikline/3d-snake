@@ -110,7 +110,7 @@ namespace NeonSerpent.Editor
 
             // Perform build
             Debug.Log($"[BuildPipeline] Building for {target}...");
-            BuildReport report = BuildPipeline.BuildPlayer(buildOptions);
+            BuildReport report = UnityEditor.BuildPipeline.BuildPlayer(buildOptions.scenes, buildOptions.locationPathName, target, buildOptions.options);
             BuildSummary summary = report.summary;
 
             // Report results

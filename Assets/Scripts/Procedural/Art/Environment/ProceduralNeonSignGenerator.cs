@@ -1,4 +1,5 @@
 using UnityEngine;
+using NeonSerpent.Procedural.Art.Effects;
 
 namespace NeonSerpent.Procedural.Art.Environment
 {

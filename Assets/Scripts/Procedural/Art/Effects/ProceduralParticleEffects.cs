@@ -111,7 +111,8 @@ namespace NeonSerpent.Procedural.Art.Effects
             var trails = particleSystem.trails;
             trails.enabled = true;
             trails.lifetime = 0.5f;
-            trails.minimumVertexDistance = 0.1f;
+            // minimumVertexDistance removed in Unity 2022.3, using lifetimeMultiplier instead
+            trails.lifetimeMultiplier = 1.0f;
 
             var renderer = streams.GetComponent<ParticleSystemRenderer>();
             renderer.material = CreateParticleMaterial(streamColor);
