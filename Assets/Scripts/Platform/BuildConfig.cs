@@ -8,7 +8,7 @@ namespace NeonSerpent.Platform
     /// </summary>
     public static class BuildConfig
     {
-        public const string GameName = "NEON SERPENT";
+        public const string GameName = "POLY SERPENT";
         public const string CompanyName = "Your Studio Name";
         public const string Version = "0.1.0";
         public const string BuildDate = "2026-05-28";

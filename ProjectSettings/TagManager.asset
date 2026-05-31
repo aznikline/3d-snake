@@ -8,6 +8,8 @@ TagManager:
   - Environment
   - Snake
   - GrapplePoint
+  - SnakeHead
+  - LevelGeometry
   layers:
   - Default
   - TransparentFX

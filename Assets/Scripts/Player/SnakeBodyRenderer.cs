@@ -4,28 +4,26 @@ using UnityEngine;
 namespace NeonSerpent.Player
 {
     /// <summary>
-    /// Generates a smooth tubular mesh from Verlet snake nodes using
-    /// Catmull-Rom spline interpolation. Supports dynamic segment count
-    /// and vertex-color-based emission for neon effects.
+    /// Generates a low-poly tubular mesh from Verlet snake nodes.
+    /// Flat-shaded segments with per-segment solid colors.
     /// </summary>
     [RequireComponent(typeof(MeshFilter))]
     [RequireComponent(typeof(MeshRenderer))]
     public class SnakeBodyRenderer : MonoBehaviour
     {
         [Header("Mesh Generation")]
-        [SerializeField] private int radialSegments = 8;
-        [SerializeField] private int splineSubdivisions = 4;
+        [SerializeField] private int radialSegments = 4;
+        [SerializeField] private int splineSubdivisions = 1;
         [SerializeField] private float baseRadius = 0.3f;
-        [SerializeField] private float radiusTaper = 0.5f;
+        [SerializeField] private float radiusTaper = 0.8f;
 
         [Header("Visuals")]
-        [SerializeField] private Material snakeMaterial;
-        [SerializeField] private Color headColor = Color.cyan;
-        [SerializeField] private Color tailColor = Color.magenta;
-        [SerializeField] private float emissionIntensity = 2f;
+        public Material snakeMaterial;
+        [SerializeField] private Color headColor = new Color(0.2f, 0.8f, 0.9f);
+        [SerializeField] private Color tailColor = new Color(0.6f, 0.3f, 0.8f);
 
         [Header("References")]
-        [SerializeField] private VerletSnakeBody snakeBody;
+        public VerletSnakeBody snakeBody;
 
         private Mesh _mesh;
         private MeshFilter _meshFilter;
@@ -116,8 +114,10 @@ namespace NeonSerpent.Player
                 up = Vector3.Cross(right, forward).normalized;
 
                 float t = i / (float)(pathCount - 1);
-                Color vertexColor = Color.Lerp(headColor, tailColor, t);
-                vertexColor *= emissionIntensity;
+                int segIndex = i / Mathf.Max(1, splineSubdivisions);
+                int totalSegs = Mathf.Max(1, (snakeBody.NodeCount - 1));
+                float segT = segIndex / (float)totalSegs;
+                Color segmentColor = Color.Lerp(headColor, tailColor, segT);
 
                 for (int r = 0; r <= radialSegments; r++)
                 {
@@ -127,7 +127,7 @@ namespace NeonSerpent.Player
                     int vi = i * (radialSegments + 1) + r;
                     vertices[vi] = center + offset;
                     normals[vi] = offset.normalized;
-                    colors[vi] = vertexColor;
+                    colors[vi] = segmentColor;
                     uvs[vi] = new Vector2(r / (float)radialSegments, t);
                 }
             }
@@ -177,11 +177,8 @@ namespace NeonSerpent.Player
         }
 
         /// <summary>
-        /// Set emission intensity dynamically (e.g., during dash).
+        /// Set color intensity (no-op in poly style, kept for API compatibility).
         /// </summary>
-        public void SetEmissionIntensity(float intensity)
-        {
-            emissionIntensity = intensity;
-        }
+        public void SetEmissionIntensity(float intensity) { }
     }
 }

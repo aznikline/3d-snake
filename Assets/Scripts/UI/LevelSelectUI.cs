@@ -145,7 +145,7 @@ namespace NeonSerpent.UI
         private bool IsZoneUnlocked(ZoneType zone)
         {
             // First zone is always unlocked
-            if (zone == ZoneType.NeonCity) return true;
+            if (zone == ZoneType.PolyCity) return true;
 
             // Check if previous zone is completed
             ZoneType previousZone = zone - 1;

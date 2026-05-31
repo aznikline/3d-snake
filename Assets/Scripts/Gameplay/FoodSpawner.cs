@@ -1,6 +1,8 @@
 using UnityEngine;
 using NeonSerpent.Core;
 using NeonSerpent.Player;
+using NeonSerpent.Level;
+using NeonSerpent.Procedural.Audio;
 
 namespace NeonSerpent.Gameplay
 {
@@ -11,14 +13,17 @@ namespace NeonSerpent.Gameplay
     public class FoodSpawner : MonoBehaviour
     {
         [Header("Spawning")]
-        [SerializeField] private Food foodPrefab;
+        public Food foodPrefab;
         [SerializeField] private int maxFoodCount = 3;
         [SerializeField] private float spawnRadius = 20f;
         [SerializeField] private float spawnHeightMin = 1f;
         [SerializeField] private float spawnHeightMax = 10f;
 
         [Header("References")]
-        [SerializeField] private VerletSnakeBody snakeBody;
+        public VerletSnakeBody snakeBody;
+        public ComboSystem comboSystem;
+        public LevelManager levelManager;
+
         [SerializeField] private Transform levelCenter;
 
         [Header("Difficulty Scaling")]
@@ -26,10 +31,15 @@ namespace NeonSerpent.Gameplay
         [SerializeField] private float difficultyMultiplier = 1f;
 
         private int _currentFoodCount;
+        private bool _initialized;
 
-        private void Start()
+        /// <summary>
+        /// Called by GameBootstrap after all references are wired.
+        /// </summary>
+        public void Initialize()
         {
-            // Initial spawn
+            if (_initialized) return;
+            _initialized = true;
             for (int i = 0; i < maxFoodCount; i++)
             {
                 SpawnFood();
@@ -37,11 +47,45 @@ namespace NeonSerpent.Gameplay
         }
 
         /// <summary>
-        /// Called when a food is collected. Schedules replacement spawn.
+        /// Clear active food and pending respawns before starting or restarting a level.
+        /// </summary>
+        public void ResetSpawner()
+        {
+            CancelInvoke(nameof(SpawnFood));
+
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                var child = transform.GetChild(i);
+                if (child.GetComponent<Food>() == null) continue;
+
+                if (Application.isPlaying)
+                    Destroy(child.gameObject);
+                else
+                    DestroyImmediate(child.gameObject);
+            }
+
+            _currentFoodCount = 0;
+            _initialized = false;
+        }
+
+        /// <summary>
+        /// Called when a food is collected. Grows snake, builds combo, schedules replacement spawn.
         /// </summary>
         public void OnFoodCollected(Food food)
         {
-            _currentFoodCount--;
+            _currentFoodCount = Mathf.Max(0, _currentFoodCount - 1);
+            Vector3 collectPosition = food != null ? food.transform.position : transform.position;
+
+            // Grow the snake
+            snakeBody?.Grow(GameConstants.SegmentsPerFood);
+
+            // Build combo
+            comboSystem?.OnFoodEaten();
+            int comboLevel = comboSystem != null ? comboSystem.CurrentComboCount : 0;
+            ProceduralSFXSystem.Instance?.PlayFoodCollect(collectPosition, comboLevel);
+
+            // Notify scoring systems
+            levelManager?.OnFoodCollected();
             Invoke(nameof(SpawnFood), GameConstants.FoodSpawnDelay);
         }
 
@@ -58,8 +102,10 @@ namespace NeonSerpent.Gameplay
             }
 
             Food newFood = Instantiate(foodPrefab, spawnPos.Value, Quaternion.identity, transform);
+            newFood.gameObject.SetActive(true);
             newFood.OnCollected += OnFoodCollected;
             _currentFoodCount++;
+            levelManager?.OnFoodSpawned();
         }
 
         private Vector3? FindValidSpawnPosition()
@@ -68,8 +114,8 @@ namespace NeonSerpent.Gameplay
 
             for (int attempt = 0; attempt < GameConstants.FoodSpawnMaxRetries; attempt++)
             {
-                Vector3 randomPos = center + Random.insideUnitSphere * spawnRadius;
-                randomPos.y = Mathf.Clamp(randomPos.y, spawnHeightMin, spawnHeightMax);
+                Vector2 circle = Random.insideUnitCircle * spawnRadius;
+                Vector3 randomPos = center + new Vector3(circle.x, 1.5f, circle.y);
 
                 if (IsPositionValid(randomPos))
                 {
@@ -82,7 +128,6 @@ namespace NeonSerpent.Gameplay
 
         private bool IsPositionValid(Vector3 position)
         {
-            // Check distance from snake head
             if (snakeBody != null && snakeBody.NodeCount > 0)
             {
                 float distToHead = Vector3.Distance(position, snakeBody.Nodes[0].Position);
@@ -90,17 +135,8 @@ namespace NeonSerpent.Gameplay
                     return false;
             }
 
-            // Check overlap with environment
-            if (Physics.CheckSphere(position, 0.5f, LayerMask.GetMask("Environment")))
-                return false;
-
-            // Check overlap with existing food
             Collider[] nearbyFood = Physics.OverlapSphere(position, 1f, LayerMask.GetMask("Food"));
             if (nearbyFood.Length > 0)
-                return false;
-
-            // Ensure position is reachable (raycast down to find ground)
-            if (!Physics.Raycast(position + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f, LayerMask.GetMask("Environment")))
                 return false;
 
             return true;

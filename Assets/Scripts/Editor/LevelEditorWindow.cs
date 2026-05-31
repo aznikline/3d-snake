@@ -7,7 +7,7 @@ using NeonSerpent.Level;
 namespace NeonSerpent.Editor
 {
     /// <summary>
-    /// Unity Editor window for creating and editing NEON SERPENT levels.
+    /// Unity Editor window for creating and editing POLY SERPENT levels.
     /// Supports 3D tile placement, export to JSON, and preview testing.
     /// </summary>
     public class LevelEditorWindow : EditorWindow
@@ -21,7 +21,7 @@ namespace NeonSerpent.Editor
         private readonly string[] _toolNames = { "Floor", "Wall", "Obstacle", "Player Start", "Food Spawn", "Grapple Point", "Erase" };
         private readonly string[] _toolIcons = { "Grid.Default", "sv_icon_dot4_pix16_gizmo", "sv_icon_dot0_pix16_gizmo", "AvatarSelector", "PreMatSphere", "sv_icon_dot3_pix16_gizmo", "TreeEditor.Trash" };
 
-        [MenuItem("NEON SERPENT/Level Editor")]
+        [MenuItem("POLY SERPENT/Level Editor")]
         public static void ShowWindow()
         {
             GetWindow<LevelEditorWindow>("Level Editor");
@@ -29,7 +29,7 @@ namespace NeonSerpent.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("NEON SERPENT Level Editor", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("POLY SERPENT Level Editor", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
             // Level selection/creation

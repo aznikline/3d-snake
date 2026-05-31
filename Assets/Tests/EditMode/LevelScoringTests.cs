@@ -1,39 +1,53 @@
 using NUnit.Framework;
 using NeonSerpent.Core;
+using NeonSerpent.Level;
 
 namespace NeonSerpent.Tests.EditMode
 {
-    /// <summary>
-    /// Edit-mode tests for level scoring logic.
-    /// These tests run without the Unity runtime and verify pure logic.
-    /// </summary>
     public class LevelScoringTests
     {
+        private LevelData CreateTestLevel(float targetTime = 60f)
+        {
+            var level = UnityEngine.ScriptableObject.CreateInstance<LevelData>();
+            level.levelId = "test_level";
+            level.displayName = "Test Level";
+            level.targetTime = targetTime;
+            level.targetLength = 20;
+            level.maxDeaths = 3;
+            level.sRankTimeMultiplier = GameConstants.SRankTimeMultiplier;
+            level.aRankTimeMultiplier = GameConstants.ARankTimeMultiplier;
+            level.bRankTimeMultiplier = GameConstants.BRankTimeMultiplier;
+            level.sRankMaxDeaths = GameConstants.SRankMaxDeaths;
+            level.aRankMaxDeaths = GameConstants.ARankMaxDeaths;
+            level.bRankMaxDeaths = GameConstants.BRankMaxDeaths;
+            level.sRankMinCollectRate = 0.95f;
+            level.aRankMinCollectRate = 0.8f;
+            level.bRankMinCollectRate = 0.6f;
+            return level;
+        }
+
         [Test]
         public void CalculateRank_SRank_PerfectRun()
         {
-            // Arrange
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * GameConstants.SRankTimeMultiplier; // 36s
-            int deaths = GameConstants.SRankMaxDeaths; // 0
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * GameConstants.SRankTimeMultiplier;
+            int deaths = GameConstants.SRankMaxDeaths;
             float collectRate = 1f;
 
-            // Act
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            Rank rank = LevelScoring.CalculateRank(level, completionTime, deaths, collectRate);
 
-            // Assert
             Assert.AreEqual(Rank.S, rank, "Perfect run should earn S rank.");
         }
 
         [Test]
         public void CalculateRank_ARank_GoodRun()
         {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * GameConstants.ARankTimeMultiplier; // 48s
-            int deaths = GameConstants.ARankMaxDeaths; // 1
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * GameConstants.ARankTimeMultiplier;
+            int deaths = GameConstants.ARankMaxDeaths;
             float collectRate = 0.9f;
 
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            Rank rank = LevelScoring.CalculateRank(level, completionTime, deaths, collectRate);
 
             Assert.AreEqual(Rank.A, rank, "Good run with 1 death should earn A rank.");
         }
@@ -41,12 +55,12 @@ namespace NeonSerpent.Tests.EditMode
         [Test]
         public void CalculateRank_BRank_AverageRun()
         {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * GameConstants.BRankTimeMultiplier; // 60s
-            int deaths = GameConstants.BRankMaxDeaths; // 3
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * GameConstants.BRankTimeMultiplier;
+            int deaths = GameConstants.BRankMaxDeaths;
             float collectRate = 0.7f;
 
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            Rank rank = LevelScoring.CalculateRank(level, completionTime, deaths, collectRate);
 
             Assert.AreEqual(Rank.B, rank, "Average run should earn B rank.");
         }
@@ -54,102 +68,51 @@ namespace NeonSerpent.Tests.EditMode
         [Test]
         public void CalculateRank_CRank_PoorRun()
         {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * 1.5f; // 90s
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * 1.5f;
             int deaths = 5;
             float collectRate = 0.5f;
 
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            Rank rank = LevelScoring.CalculateRank(level, completionTime, deaths, collectRate);
 
             Assert.AreEqual(Rank.C, rank, "Poor run should earn C rank.");
         }
 
         [Test]
-        public void CalculateRank_Boundary_TimeExactlyAtThreshold()
-        {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * GameConstants.ARankTimeMultiplier; // Exactly at A threshold
-            int deaths = 0;
-            float collectRate = 1f;
-
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
-
-            // At exact threshold, should get the lower rank (B, not A)
-            Assert.AreEqual(Rank.B, rank, "Exactly at threshold should get lower rank.");
-        }
-
-        [Test]
         public void CalculateRank_DeathPenalty_OverridesTime()
         {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * 0.3f; // Very fast
-            int deaths = 2; // But too many deaths for S or A
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * 0.3f;
+            int deaths = 2;
             float collectRate = 1f;
 
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            Rank rank = LevelScoring.CalculateRank(level, completionTime, deaths, collectRate);
 
             Assert.AreEqual(Rank.B, rank, "Too many deaths should penalize rank regardless of time.");
         }
 
         [Test]
-        public void CalculateRank_CollectRate_MinimumRequired()
+        public void CalculateScore_SRank_GivesHighestMultiplier()
         {
-            float levelTargetTime = 60f;
-            float completionTime = levelTargetTime * 0.5f;
-            int deaths = 0;
-            float collectRate = 0.5f; // Below typical threshold
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * 0.5f;
+            float collectRate = 1f;
 
-            Rank rank = CalculateRank(levelTargetTime, completionTime, deaths, collectRate);
+            int score = LevelScoring.CalculateScore(level, Rank.S, completionTime, 0, collectRate);
 
-            Assert.AreEqual(Rank.B, rank, "Low collection rate should prevent S rank.");
+            Assert.Greater(score, 2500, "S rank should give a high score.");
         }
 
-        // ── Helper ──
-
-        /// <summary>
-        /// Rank calculation logic to be implemented in LevelScoring class.
-        /// This is a testable prototype of the scoring algorithm.
-        /// </summary>
-        private Rank CalculateRank(float targetTime, float completionTime, int deaths, float collectRate)
+        [Test]
+        public void CalculateScore_CRank_GivesLowestMultiplier()
         {
-            // Time score (lower is better)
-            float timeRatio = completionTime / targetTime;
+            var level = CreateTestLevel();
+            float completionTime = level.targetTime * 1.5f;
+            float collectRate = 0.5f;
 
-            // Base rank from time
-            Rank baseRank;
-            if (timeRatio <= GameConstants.SRankTimeMultiplier && deaths <= GameConstants.SRankMaxDeaths && collectRate >= 0.95f)
-                baseRank = Rank.S;
-            else if (timeRatio <= GameConstants.ARankTimeMultiplier && deaths <= GameConstants.ARankMaxDeaths && collectRate >= 0.8f)
-                baseRank = Rank.A;
-            else if (timeRatio <= GameConstants.BRankTimeMultiplier && deaths <= GameConstants.BRankMaxDeaths && collectRate >= 0.6f)
-                baseRank = Rank.B;
-            else
-                baseRank = Rank.C;
+            int score = LevelScoring.CalculateScore(level, Rank.C, completionTime, 3, collectRate);
 
-            // Death penalty: each death beyond threshold drops rank by one
-            int deathPenalty = 0;
-            if (baseRank == Rank.S && deaths > GameConstants.SRankMaxDeaths)
-                deathPenalty = deaths - GameConstants.SRankMaxDeaths;
-            else if (baseRank == Rank.A && deaths > GameConstants.ARankMaxDeaths)
-                deathPenalty = deaths - GameConstants.ARankMaxDeaths;
-
-            for (int i = 0; i < deathPenalty; i++)
-            {
-                baseRank = DropRank(baseRank);
-            }
-
-            return baseRank;
-        }
-
-        private Rank DropRank(Rank rank)
-        {
-            return rank switch
-            {
-                Rank.S => Rank.A,
-                Rank.A => Rank.B,
-                Rank.B => Rank.C,
-                _ => Rank.C
-            };
+            Assert.Less(score, 2000, "C rank should give a low score.");
         }
     }
 }

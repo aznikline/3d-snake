@@ -1,10 +1,11 @@
 using UnityEngine;
+using NeonSerpent.Core;
 
 namespace NeonSerpent.Procedural.Art.Effects
 {
     /// <summary>
-    /// Generates procedural particle effects for cyberpunk atmosphere:
-    /// energy sparks, data stream particles, and neon dust.
+    /// Generates procedural particle effects for atmosphere:
+    /// sparks, data stream particles, and dust.
     /// </summary>
     public class ProceduralParticleEffects : MonoBehaviour
     {
@@ -12,19 +13,19 @@ namespace NeonSerpent.Procedural.Art.Effects
         [SerializeField] private int sparkCount = 50;
         [SerializeField] private float sparkLifetime = 1f;
         [SerializeField] private float sparkSpeed = 5f;
-        [SerializeField] private Color sparkColor = new Color(0f, 1f, 1f);
+        [SerializeField] private Color sparkColor = new Color(0.8f, 0.75f, 0.5f);
 
         [Header("Data Stream")]
         [SerializeField] private int streamCount = 100;
         [SerializeField] private float streamSpeed = 2f;
         [SerializeField] private float streamHeight = 20f;
-        [SerializeField] private Color streamColor = new Color(0f, 0.8f, 1f);
+        [SerializeField] private Color streamColor = new Color(0.5f, 0.7f, 0.5f);
 
-        [Header("Neon Dust")]
+        [Header("Dust")]
         [SerializeField] private int dustCount = 200;
         [SerializeField] private float dustSize = 0.02f;
         [SerializeField] private float dustDrift = 0.5f;
-        [SerializeField] private Color dustColor = new Color(0.5f, 0f, 1f);
+        [SerializeField] private Color dustColor = new Color(0.6f, 0.55f, 0.5f);
 
         [Header("Area")]
         [SerializeField] private Vector3 effectArea = new Vector3(100f, 30f, 100f);
@@ -36,7 +37,7 @@ namespace NeonSerpent.Procedural.Art.Effects
         {
             CreateEnergySparks(parent);
             CreateDataStreams(parent);
-            CreateNeonDust(parent);
+            CreateDust(parent);
         }
 
         private void CreateEnergySparks(Transform parent)
@@ -120,9 +121,9 @@ namespace NeonSerpent.Procedural.Art.Effects
             renderer.lengthScale = 3f;
         }
 
-        private void CreateNeonDust(Transform parent)
+        private void CreateDust(Transform parent)
         {
-            GameObject dust = new GameObject("NeonDust");
+            GameObject dust = new GameObject("Dust");
             dust.transform.SetParent(parent);
 
             var particleSystem = dust.AddComponent<ParticleSystem>();
@@ -164,11 +165,7 @@ namespace NeonSerpent.Procedural.Art.Effects
 
         private Material CreateParticleMaterial(Color color)
         {
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            mat.SetColor("_BaseColor", color);
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", color * 0.5f);
-            return mat;
+            return PolyMaterials.CreateParticleUnlit(color);
         }
     }
 }

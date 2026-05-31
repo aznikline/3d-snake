@@ -19,7 +19,7 @@ namespace NeonSerpent.Player
         [SerializeField] private float gravity = -5f;
 
         [Header("Collision")]
-        [SerializeField] private LayerMask environmentLayer;
+        public LayerMask environmentLayer;
         [SerializeField] private float collisionOffset = 0.05f;
 
         [Header("Growth")]

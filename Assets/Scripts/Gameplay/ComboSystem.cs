@@ -4,7 +4,7 @@ using NeonSerpent.Core;
 namespace NeonSerpent.Gameplay
 {
     /// <summary>
-    /// Manages the combo meter and neon dash ability.
+    /// Manages the combo meter and dash ability.
     /// Combo builds by eating food consecutively; decay starts when
     /// no food is eaten within the timeout window.
     /// </summary>
@@ -39,6 +39,11 @@ namespace NeonSerpent.Gameplay
         private float _dashCooldownTimer;
         private int _dashCharges;
 
+        private void Awake()
+        {
+            _dashCharges = maxDashCharges;
+        }
+
         private void Start()
         {
             _dashCharges = maxDashCharges;
@@ -65,6 +70,7 @@ namespace NeonSerpent.Gameplay
 
             if (previousMeter < 1f && ComboMeter >= 1f)
             {
+                _dashCharges = maxDashCharges;
                 OnComboReady?.Invoke();
             }
         }

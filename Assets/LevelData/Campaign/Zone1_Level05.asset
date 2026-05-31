@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b2b4ae37400481cae10c461b8bb6861, type: 3}
+  m_Name: Zone1_Level05
+  m_EditorClassIdentifier: NeonSerpent.Level:LevelData
+  levelId: zone1_level_05
+  displayName: "Wall Runner"
+  description: "Master the wall-run ability to reach new areas."
+  zone: 0
+  zoneOrder: 5
+  targetLength: 25
+  targetTime: 150
+  maxDeaths: 3
+  sRankTimeMultiplier: 0.6
+  aRankTimeMultiplier: 0.8
+  bRankTimeMultiplier: 1
+  sRankMaxDeaths: 0
+  aRankMaxDeaths: 1
+  bRankMaxDeaths: 3
+  sRankMinCollectRate: 0.95
+  aRankMinCollectRate: 0.8
+  bRankMinCollectRate: 0.6
+  unlockedByDefault: 0
+  requiredLevelId: zone1_level_04
+  requiredRank: 0
+  environmentTheme: 0
+  musicTheme: 0
+  enableWallRun: 1
+  enableSlide: 1
+  enableGrapple: 0
+  enableDash: 1
+  geometryJson: {fileID: 0}

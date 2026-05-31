@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b2b4ae37400481cae10c461b8bb6861, type: 3}
+  m_Name: Zone1_Level01
+  m_EditorClassIdentifier: NeonSerpent.Level:LevelData
+  levelId: zone1_level_01
+  displayName: "Neon Awakening"
+  description: "Learn to move in 3D space. Reach the target length to complete."
+  zone: 0
+  zoneOrder: 1
+  targetLength: 5
+  targetTime: 120
+  maxDeaths: 99
+  sRankTimeMultiplier: 0.6
+  aRankTimeMultiplier: 0.8
+  bRankTimeMultiplier: 1
+  sRankMaxDeaths: 0
+  aRankMaxDeaths: 1
+  bRankMaxDeaths: 3
+  sRankMinCollectRate: 0.95
+  aRankMinCollectRate: 0.8
+  bRankMinCollectRate: 0.6
+  unlockedByDefault: 1
+  requiredLevelId: 
+  requiredRank: 0
+  environmentTheme: 0
+  musicTheme: 0
+  enableWallRun: 0
+  enableSlide: 0
+  enableGrapple: 0
+  enableDash: 0
+  geometryJson: {fileID: 0}

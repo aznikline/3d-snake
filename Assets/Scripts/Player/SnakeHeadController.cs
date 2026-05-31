@@ -2,6 +2,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using NeonSerpent.Core;
 
+// Conditional using for direct device access (fallback when no PlayerInput)
+using Keyboard = UnityEngine.InputSystem.Keyboard;
+using Mouse = UnityEngine.InputSystem.Mouse;
+using Gamepad = UnityEngine.InputSystem.Gamepad;
+
 namespace NeonSerpent.Player
 {
     /// <summary>
@@ -14,6 +19,7 @@ namespace NeonSerpent.Player
         [Header("Movement")]
         [SerializeField] private float moveSpeed = GameConstants.BaseSpeed;
         [SerializeField] private float gravity = -20f;
+        private float _baseSpeed;
 
         [Header("Mouse Look")]
         [SerializeField] private float lookSensitivity = 0.5f;
@@ -21,8 +27,8 @@ namespace NeonSerpent.Player
         [SerializeField] private float lookPitchMax = 80f;
 
         [Header("References")]
-        [SerializeField] private Transform cameraTransform;
-        [SerializeField] private VerletSnakeBody snakeBody;
+        public Transform cameraTransform;
+        public VerletSnakeBody snakeBody;
 
         private CharacterController _controller;
         private Vector3 _velocity;
@@ -31,6 +37,10 @@ namespace NeonSerpent.Player
         private float _verticalInput;
         private float _pitch;
         private float _yaw;
+        private NeonSerpent.Gameplay.ComboSystem _cachedCombo;
+        private SlideAbility _slideAbility;
+        private GrappleAbility _grappleAbility;
+        private bool _slideInputHeld;
 
         // Ability states
         private bool _isDashing;
@@ -52,6 +62,10 @@ namespace NeonSerpent.Player
 
         private void Start()
         {
+            _baseSpeed = moveSpeed;
+            _cachedCombo = FindObjectOfType<NeonSerpent.Gameplay.ComboSystem>();
+            _slideAbility = GetComponent<SlideAbility>();
+            _grappleAbility = GetComponent<GrappleAbility>();
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -60,9 +74,98 @@ namespace NeonSerpent.Player
         {
             if (!GameStateManager.Instance.IsPlaying) return;
 
+            ReadInputFallback();
             HandleLook();
             HandleMovement();
             UpdateHeadBob();
+        }
+
+        /// <summary>
+        /// Direct device input fallback when PlayerInput messages are not wired.
+        /// </summary>
+        private void ReadInputFallback()
+        {
+            if (Keyboard.current != null)
+            {
+                var move = Vector2.zero;
+                if (Keyboard.current.wKey.isPressed) move.y += 1;
+                if (Keyboard.current.sKey.isPressed) move.y -= 1;
+                if (Keyboard.current.aKey.isPressed) move.x -= 1;
+                if (Keyboard.current.dKey.isPressed) move.x += 1;
+                _moveInput = move;
+
+                _verticalInput = 0;
+                if (Keyboard.current.spaceKey.isPressed) _verticalInput += 1;
+                if (Keyboard.current.leftCtrlKey.isPressed) _verticalInput -= 1;
+
+                HandleSlideInput(Keyboard.current.leftCtrlKey.isPressed);
+
+                if (Keyboard.current.leftShiftKey.wasPressedThisFrame && !_isDashing)
+                {
+                    if (_cachedCombo == null)
+                        _cachedCombo = FindObjectOfType<NeonSerpent.Gameplay.ComboSystem>();
+                    if (_cachedCombo != null && _cachedCombo.IsDashReady)
+                    {
+                        _cachedCombo.ActivateDash();
+                        SetDashState(true);
+                    }
+                }
+
+                if (Keyboard.current.eKey.wasPressedThisFrame)
+                    TryActivateGrapple();
+
+                if (Mouse.current != null)
+                {
+                    _lookInput = Mouse.current.delta.ReadValue() * 0.1f;
+                }
+            }
+            else if (Gamepad.current != null)
+            {
+                _moveInput = Gamepad.current.leftStick.ReadValue();
+                _lookInput = Gamepad.current.rightStick.ReadValue() * 2f;
+                _verticalInput = Gamepad.current.dpad.up.isPressed ? 1f :
+                    Gamepad.current.dpad.down.isPressed ? -1f : 0f;
+
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !_isDashing)
+                {
+                    if (_cachedCombo == null)
+                        _cachedCombo = FindObjectOfType<NeonSerpent.Gameplay.ComboSystem>();
+                    if (_cachedCombo != null && _cachedCombo.IsDashReady)
+                    {
+                        _cachedCombo.ActivateDash();
+                        SetDashState(true);
+                    }
+                }
+
+                HandleSlideInput(Gamepad.current.leftShoulder.isPressed);
+
+                if (Gamepad.current.buttonWest.wasPressedThisFrame)
+                    TryActivateGrapple();
+            }
+        }
+
+        private void HandleSlideInput(bool pressed)
+        {
+            if (pressed == _slideInputHeld) return;
+            _slideInputHeld = pressed;
+
+            if (_slideAbility == null)
+                _slideAbility = GetComponent<SlideAbility>();
+            if (_slideAbility == null || !_slideAbility.enabled) return;
+
+            if (pressed)
+                _slideAbility.StartSlide();
+            else
+                _slideAbility.EndSlide();
+        }
+
+        private void TryActivateGrapple()
+        {
+            if (_grappleAbility == null)
+                _grappleAbility = GetComponent<GrappleAbility>();
+            if (_grappleAbility == null || !_grappleAbility.enabled) return;
+
+            _grappleAbility.ActivateGrapple();
         }
 
         private void HandleLook()
@@ -72,7 +175,8 @@ namespace NeonSerpent.Player
             _pitch = Mathf.Clamp(_pitch, lookPitchMin, lookPitchMax);
 
             transform.rotation = Quaternion.Euler(0f, _yaw, 0f);
-            cameraTransform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
+            if (cameraTransform != null)
+                cameraTransform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }
 
         private void HandleMovement()
@@ -144,21 +248,13 @@ namespace NeonSerpent.Player
 
         public void OnSlide(InputValue value)
         {
-            bool pressed = value.isPressed;
-            if (pressed && !_isSliding && _controller.isGrounded)
-            {
-                StartSlide();
-            }
-            else if (!pressed && _isSliding)
-            {
-                EndSlide();
-            }
+            HandleSlideInput(value.isPressed);
         }
 
         public void OnGrapple()
         {
             if (_isGrappling) return;
-            // Grapple activation handled by GrappleAbility
+            TryActivateGrapple();
         }
 
         // ── Ability State Setters (called by ability components) ──
@@ -166,7 +262,6 @@ namespace NeonSerpent.Player
         public void SetDashState(bool active)
         {
             _isDashing = active;
-            moveSpeed = active ? GameConstants.BaseSpeed * GameConstants.DashSpeedMultiplier : GameConstants.BaseSpeed;
         }
 
         public void SetWallRunState(bool active)
@@ -175,18 +270,9 @@ namespace NeonSerpent.Player
             if (active) _velocity.y = 0f; // Cancel gravity during wall run
         }
 
-        private void StartSlide()
+        public void SetSlideState(bool active)
         {
-            _isSliding = true;
-            _controller.height *= GameConstants.SlideHeightReduction;
-            _controller.center = new Vector3(0f, -_controller.height * 0.25f, 0f);
-        }
-
-        private void EndSlide()
-        {
-            _isSliding = false;
-            _controller.height /= GameConstants.SlideHeightReduction;
-            _controller.center = Vector3.zero;
+            _isSliding = active;
         }
 
         public void SetGrappleState(bool active)

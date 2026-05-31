@@ -5,6 +5,7 @@ using NeonSerpent.Core;
 using NeonSerpent.Player;
 using NeonSerpent.Gameplay;
 using NeonSerpent.Audio;
+using NeonSerpent.Progression;
 
 namespace NeonSerpent.Level
 {
@@ -19,19 +20,20 @@ namespace NeonSerpent.Level
         [SerializeField] private LevelData currentLevel;
 
         [Header("Player References")]
-        [SerializeField] private SnakeHeadController snakeController;
-        [SerializeField] private VerletSnakeBody snakeBody;
-        [SerializeField] private ComboSystem comboSystem;
+        public SnakeHeadController snakeController;
+        public VerletSnakeBody snakeBody;
+        public ComboSystem comboSystem;
 
         [Header("Systems")]
-        [SerializeField] private FoodSpawner foodSpawner;
-        [SerializeField] private DeathManager deathManager;
-        [SerializeField] private MusicManager musicManager;
+        public FoodSpawner foodSpawner;
+        public DeathManager deathManager;
+        public MusicManager musicManager;
 
         [Header("Events")]
         public System.Action<LevelData> OnLevelStarted;
         public System.Action<LevelData, Rank, int> OnLevelCompleted; // level, rank, score
         public System.Action OnLevelFailed;
+        public System.Action OnCampaignComplete;
 
         public LevelData CurrentLevel => currentLevel;
         public bool IsLevelActive => _isLevelActive;
@@ -45,14 +47,20 @@ namespace NeonSerpent.Level
 
         private void OnEnable()
         {
-            if (deathManager != null)
-                deathManager.OnDeath += OnPlayerDeath;
         }
 
         private void OnDisable()
         {
             if (deathManager != null)
                 deathManager.OnDeath -= OnPlayerDeath;
+        }
+
+        private void SubscribeDeathManager()
+        {
+            if (deathManager == null) return;
+
+            deathManager.OnDeath -= OnPlayerDeath;
+            deathManager.OnDeath += OnPlayerDeath;
         }
 
         private void Update()
@@ -81,17 +89,20 @@ namespace NeonSerpent.Level
             _foodCollected = 0;
             _totalFoodSpawned = 0;
 
-            // Configure gameplay based on level settings
             ConfigureLevelGameplay(level);
 
-            // Reset player
+            SubscribeDeathManager();
+            deathManager?.ResetGracePeriod();
+            Debug.Log($"[LevelManager] Reset grace period before changing state to Playing");
+
             ResetPlayer(level);
 
-            // Load geometry (if applicable)
-            LoadLevelGeometry(level);
-
             GameStateManager.Instance.ChangeState(GameState.Playing);
+            Debug.Log($"[LevelManager] State changed to Playing");
             OnLevelStarted?.Invoke(level);
+
+            foodSpawner?.ResetSpawner();
+            foodSpawner?.Initialize();
 
             Debug.Log($"[LevelManager] Started: {level.FullLevelName}");
         }
@@ -137,8 +148,9 @@ namespace NeonSerpent.Level
             }
             else
             {
-                Debug.Log("[LevelManager] No more levels. Campaign complete!");
-                // TODO: Show campaign completion screen
+                Debug.Log("[LevelManager] All levels completed. Campaign finished!");
+                GameStateManager.Instance.ChangeState(GameState.MainMenu);
+                OnCampaignComplete?.Invoke();
             }
         }
 
@@ -171,25 +183,23 @@ namespace NeonSerpent.Level
             if (grapple != null) grapple.enabled = level.enableGrapple;
 
             // Configure combo system
-            if (comboSystem != null && !level.enableDash)
+            if (comboSystem != null)
             {
-                comboSystem.enabled = false;
+                comboSystem.enabled = level.enableDash;
             }
 
             // Set music theme
             if (musicManager != null)
-            {
-                // musicManager.SetTheme(level.musicTheme);
-            }
+                musicManager.SetIntensity(level.musicTheme == MusicTheme.Ambient ? 0f : 0.5f);
         }
 
         private void ResetPlayer(LevelData level)
         {
-            // Find player start position (from geometry or default)
+            // Find player by component or use default position
             Vector3 startPos = Vector3.zero;
-            var playerStart = GameObject.FindWithTag("PlayerStart");
-            if (playerStart != null)
-                startPos = playerStart.transform.position;
+            var existingPlayer = FindObjectOfType<NeonSerpent.Player.SnakeHeadController>();
+            if (existingPlayer != null)
+                startPos = existingPlayer.transform.position;
 
             snakeController.transform.position = startPos;
             snakeController.transform.rotation = Quaternion.identity;
@@ -209,9 +219,12 @@ namespace NeonSerpent.Level
         private void CheckLevelCompletion()
         {
             if (currentLevel == null) return;
+            if (snakeBody == null) return;
 
-            // Level complete condition: reach target length
-            if (snakeBody.NodeCount >= currentLevel.targetLength)
+            float elapsed = Time.time - _levelStartTime;
+            if (elapsed < 2f) return;
+
+            if (_foodCollected > 0 && snakeBody.NodeCount >= currentLevel.targetLength)
             {
                 CompleteLevel();
             }
@@ -227,6 +240,9 @@ namespace NeonSerpent.Level
 
             Rank rank = LevelScoring.CalculateRank(currentLevel, completionTime, _deathCount, collectRate);
             int score = LevelScoring.CalculateScore(currentLevel, rank, completionTime, _deathCount, collectRate);
+
+            // Save completion record
+            SaveSystem.Instance?.RecordLevelCompletion(currentLevel.levelId, rank, score, completionTime);
 
             GameStateManager.Instance.ChangeState(GameState.LevelComplete);
 

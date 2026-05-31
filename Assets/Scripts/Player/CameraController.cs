@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using NeonSerpent.Core;
 
 namespace NeonSerpent.Player
@@ -18,15 +20,26 @@ namespace NeonSerpent.Player
         [SerializeField] private float chromaticAberrationIntensity = 0.3f;
         [SerializeField] private float motionBlurIntensity = 0.5f;
 
+        [Header("Post-Processing")]
+        [SerializeField] private Volume postProcessVolume;
+
         private Camera _camera;
         private SnakeHeadController _snakeController;
         private float _targetFOV;
         private float _currentShake;
+        private ChromaticAberration _chromaticAberration;
+        private MotionBlur _motionBlur;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
             _snakeController = GetComponentInParent<SnakeHeadController>();
+
+            if (postProcessVolume != null && postProcessVolume.profile != null)
+            {
+                postProcessVolume.profile.TryGet(out _chromaticAberration);
+                postProcessVolume.profile.TryGet(out _motionBlur);
+            }
         }
 
         private void Start()
@@ -39,6 +52,7 @@ namespace NeonSerpent.Player
         {
             UpdateFOV();
             UpdateShake();
+            UpdatePostProcessing();
         }
 
         private void UpdateFOV()
@@ -53,6 +67,22 @@ namespace NeonSerpent.Player
             }
 
             _camera.fieldOfView = Mathf.Lerp(_camera.fieldOfView, _targetFOV, Time.deltaTime * fovTransitionSpeed);
+        }
+
+        private void UpdatePostProcessing()
+        {
+            bool isDashing = _snakeController != null && _snakeController.IsDashing;
+
+            float targetCA = isDashing ? chromaticAberrationIntensity : 0f;
+            float targetMB = isDashing ? motionBlurIntensity : 0f;
+
+            if (_chromaticAberration != null)
+                _chromaticAberration.intensity.value = Mathf.Lerp(
+                    _chromaticAberration.intensity.value, targetCA, Time.deltaTime * 10f);
+
+            if (_motionBlur != null)
+                _motionBlur.intensity.value = Mathf.Lerp(
+                    _motionBlur.intensity.value, targetMB, Time.deltaTime * 10f);
         }
 
         private void UpdateShake()
@@ -74,13 +104,12 @@ namespace NeonSerpent.Player
         }
 
         /// <summary>
-        /// Set chromatic aberration intensity (post-processing volume).
-        /// Called during dash or high-speed moments.
+        /// Set chromatic aberration intensity. Called during dash or high-speed moments.
         /// </summary>
         public void SetChromaticAberration(float intensity)
         {
-            // Applied via URP Volume Profile at runtime
-            // Implementation depends on Volume component reference
+            if (_chromaticAberration != null)
+                _chromaticAberration.intensity.value = intensity;
         }
 
         /// <summary>
@@ -88,7 +117,8 @@ namespace NeonSerpent.Player
         /// </summary>
         public void SetMotionBlur(float intensity)
         {
-            // Applied via URP Volume Profile at runtime
+            if (_motionBlur != null)
+                _motionBlur.intensity.value = intensity;
         }
     }
 }

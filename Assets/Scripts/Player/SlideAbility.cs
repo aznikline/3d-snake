@@ -53,6 +53,7 @@ namespace NeonSerpent.Player
 
             _isSliding = true;
             _slideTimer = slideDuration;
+            _controller.SetSlideState(true);
 
             // Store original values
             _originalHeight = _characterController.height;
@@ -85,6 +86,7 @@ namespace NeonSerpent.Player
             }
 
             _isSliding = false;
+            _controller.SetSlideState(false);
 
             // Restore original values
             _characterController.height = _originalHeight;

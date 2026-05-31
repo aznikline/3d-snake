@@ -296,6 +296,7 @@ namespace NeonSerpent.Progression
         public int totalScore;
         public int totalDeaths;
         public float totalPlayTime;
+        public int endlessHighScore;
     }
 
     [Serializable]

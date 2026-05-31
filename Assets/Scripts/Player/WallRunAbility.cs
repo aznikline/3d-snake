@@ -13,7 +13,7 @@ namespace NeonSerpent.Player
         [Header("Detection")]
         [SerializeField] private float wallCheckDistance = 1f;
         [SerializeField] private float wallRunSpeedMultiplier = 1.1f;
-        [SerializeField] private LayerMask wallLayer;
+        public LayerMask wallLayer;
 
         [Header("Visuals")]
         [SerializeField] private ParticleSystem wallRunParticles;
@@ -24,6 +24,7 @@ namespace NeonSerpent.Player
         private Vector3 _wallNormal;
         private float _wallRunTimer;
         private Transform _cameraTransform;
+        private Quaternion _originalCameraLocalRotation;
 
         public bool IsWallRunning => _isWallRunning;
 
@@ -83,9 +84,10 @@ namespace NeonSerpent.Player
             _wallRunTimer = GameConstants.WallRunDurationMax;
             _controller.SetWallRunState(true);
 
-            // Camera tilt toward wall
+            // Save camera rotation before tilting
             if (_cameraTransform != null)
             {
+                _originalCameraLocalRotation = _cameraTransform.localRotation;
                 float tiltDir = Vector3.Dot(transform.right, -wallNormal) > 0 ? 1f : -1f;
                 _cameraTransform.localRotation *= Quaternion.Euler(0f, 0f, tiltAngle * tiltDir);
             }
@@ -126,13 +128,10 @@ namespace NeonSerpent.Player
             _isWallRunning = false;
             _controller.SetWallRunState(false);
 
-            // Reset camera tilt
+            // Restore camera rotation
             if (_cameraTransform != null)
             {
-                _cameraTransform.localRotation = Quaternion.Euler(
-                    _cameraTransform.localRotation.eulerAngles.x,
-                    0f,
-                    0f);
+                _cameraTransform.localRotation = _originalCameraLocalRotation;
             }
 
             if (wallRunParticles != null)

@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
+using NeonSerpent.Core;
 
 namespace NeonSerpent.Procedural.Art.Environment
 {
     /// <summary>
     /// Generates procedural cyberpunk buildings at runtime.
-    /// Creates building shells with neon trim, windows, and variation
+    /// Creates building shells with color trim, windows, and variation
     /// without requiring any external 3D models.
     /// </summary>
     public class ProceduralBuildingGenerator : MonoBehaviour
@@ -18,16 +19,14 @@ namespace NeonSerpent.Procedural.Art.Environment
         [SerializeField] private float minHeight = 20f;
         [SerializeField] private float maxHeight = 80f;
 
-        [Header("Neon Trim")]
-        [SerializeField] private float neonTrimWidth = 0.3f;
-        [SerializeField] private float neonEmissionIntensity = 3f;
-        [SerializeField] private Color[] neonColors = new[]
+        [Header("Building Colors")]
+        [SerializeField] private Color[] buildingColors = new[]
         {
-            new Color(0f, 1f, 1f),    // Cyan
-            new Color(1f, 0f, 0.8f),  // Magenta
-            new Color(1f, 0.5f, 0f),  // Orange
-            new Color(0.5f, 0f, 1f),  // Purple
-            new Color(0f, 1f, 0.5f)   // Lime
+            new Color(0.4f, 0.45f, 0.5f),
+            new Color(0.5f, 0.45f, 0.4f),
+            new Color(0.45f, 0.5f, 0.45f),
+            new Color(0.5f, 0.5f, 0.45f),
+            new Color(0.4f, 0.4f, 0.5f)
         };
 
         [Header("Windows")]
@@ -38,9 +37,6 @@ namespace NeonSerpent.Procedural.Art.Environment
 
         [Header("Materials")]
         [SerializeField] private Material buildingBaseMaterial;
-        [SerializeField] private Material neonMaterial;
-        [SerializeField] private Material windowLitMaterial;
-        [SerializeField] private Material windowDarkMaterial;
 
         [Header("Detail")]
         [SerializeField] private bool addAntennas = true;
@@ -66,9 +62,6 @@ namespace NeonSerpent.Procedural.Art.Environment
 
             // Main building body
             CreateBuildingBody(building.transform, width, depth, height);
-
-            // Neon trim on edges
-            CreateNeonTrim(building.transform, width, depth, height);
 
             // Windows
             CreateWindows(building.transform, width, depth, height);
@@ -126,51 +119,16 @@ namespace NeonSerpent.Procedural.Art.Environment
             }
             else
             {
-                // Create procedural material
                 var renderer = body.GetComponent<Renderer>();
-                renderer.material = CreateProceduralBuildingMaterial();
+                Color baseColor = buildingColors[Random.Range(0, buildingColors.Length)];
+                baseColor.r += Random.Range(-0.05f, 0.05f);
+                baseColor.g += Random.Range(-0.05f, 0.05f);
+                baseColor.b += Random.Range(-0.05f, 0.05f);
+                renderer.material = PolyMaterials.CreateUnlit(baseColor);
             }
 
             // Remove collider (we'll use custom level collision)
-            Destroy(body.GetComponent<Collider>());
-        }
-
-        private void CreateNeonTrim(Transform parent, float width, float depth, float height)
-        {
-            Color neonColor = neonColors[Random.Range(0, neonColors.Length)];
-
-            // Vertical edges
-            Vector3[] edgePositions = new[]
-            {
-                new Vector3(-width * 0.5f, height * 0.5f, -depth * 0.5f),
-                new Vector3(width * 0.5f, height * 0.5f, -depth * 0.5f),
-                new Vector3(-width * 0.5f, height * 0.5f, depth * 0.5f),
-                new Vector3(width * 0.5f, height * 0.5f, depth * 0.5f)
-            };
-
-            foreach (var pos in edgePositions)
-            {
-                GameObject trim = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                trim.name = "NeonTrim";
-                trim.transform.SetParent(parent);
-                trim.transform.localPosition = pos;
-                trim.transform.localScale = new Vector3(neonTrimWidth, height, neonTrimWidth);
-
-                var renderer = trim.GetComponent<Renderer>();
-                renderer.material = CreateNeonMaterial(neonColor);
-                Destroy(trim.GetComponent<Collider>());
-            }
-
-            // Horizontal trim at top
-            GameObject topTrim = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            topTrim.name = "TopTrim";
-            topTrim.transform.SetParent(parent);
-            topTrim.transform.localPosition = new Vector3(0f, height, 0f);
-            topTrim.transform.localScale = new Vector3(width + neonTrimWidth, neonTrimWidth, depth + neonTrimWidth);
-
-            var topRenderer = topTrim.GetComponent<Renderer>();
-            topRenderer.material = CreateNeonMaterial(neonColor);
-            Destroy(topTrim.GetComponent<Collider>());
+            DestroyGeneratedObject(body.GetComponent<Collider>());
         }
 
         private void CreateWindows(Transform parent, float width, float depth, float height)
@@ -222,8 +180,15 @@ namespace NeonSerpent.Procedural.Art.Environment
             window.transform.localScale = scale;
 
             var renderer = window.GetComponent<Renderer>();
-            renderer.material = isLit ? CreateWindowLitMaterial() : CreateWindowDarkMaterial();
-            Destroy(window.GetComponent<Collider>());
+            if (isLit)
+            {
+                renderer.material = PolyMaterials.CreateUnlit(new Color(0.8f, 0.85f, 0.7f));
+            }
+            else
+            {
+                renderer.material = PolyMaterials.CreateUnlit(new Color(0.15f, 0.15f, 0.2f));
+            }
+            DestroyGeneratedObject(window.GetComponent<Collider>());
         }
 
         private void CreateAntennas(Transform parent, float width, float depth, float height)
@@ -243,8 +208,8 @@ namespace NeonSerpent.Procedural.Art.Environment
                 antenna.transform.localScale = new Vector3(0.2f, antennaHeight * 0.5f, 0.2f);
 
                 var renderer = antenna.GetComponent<Renderer>();
-                renderer.material = CreateProceduralBuildingMaterial();
-                Destroy(antenna.GetComponent<Collider>());
+                renderer.material = PolyMaterials.CreateUnlit(new Color(0.4f, 0.4f, 0.45f));
+                DestroyGeneratedObject(antenna.GetComponent<Collider>());
 
                 // Blinking light on top
                 GameObject light = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -254,8 +219,8 @@ namespace NeonSerpent.Procedural.Art.Environment
                 light.transform.localScale = Vector3.one * 0.3f;
 
                 var lightRenderer = light.GetComponent<Renderer>();
-                lightRenderer.material = CreateNeonMaterial(Color.red);
-                Destroy(light.GetComponent<Collider>());
+                lightRenderer.material = PolyMaterials.CreateUnlit(Color.red);
+                DestroyGeneratedObject(light.GetComponent<Collider>());
             }
         }
 
@@ -290,57 +255,20 @@ namespace NeonSerpent.Procedural.Art.Environment
                 billboard.transform.localScale = scale;
 
                 var renderer = billboard.GetComponent<Renderer>();
-                renderer.material = CreateBillboardMaterial();
-                Destroy(billboard.GetComponent<Collider>());
+                renderer.material = PolyMaterials.CreateUnlit(new Color(Random.Range(0.5f, 0.9f), Random.Range(0.5f, 0.9f), Random.Range(0.5f, 0.9f)));
+                DestroyGeneratedObject(billboard.GetComponent<Collider>());
             }
         }
 
-        // ── Procedural Materials ──
-
-        private Material CreateProceduralBuildingMaterial()
+        private void DestroyGeneratedObject(UnityEngine.Object obj)
         {
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = new Color(0.05f, 0.05f, 0.08f); // Dark blue-black
-            mat.SetFloat("_Smoothness", 0.8f);
-            mat.SetFloat("_Metallic", 0.3f);
-            return mat;
+            if (obj == null) return;
+
+            if (Application.isPlaying)
+                Destroy(obj);
+            else
+                DestroyImmediate(obj);
         }
 
-        private Material CreateNeonMaterial(Color color)
-        {
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = color;
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", color * neonEmissionIntensity);
-            mat.SetFloat("_EmissionIntensity", neonEmissionIntensity);
-            return mat;
-        }
-
-        private Material CreateWindowLitMaterial()
-        {
-            Color windowColor = new Color(0.8f, 0.9f, 1f);
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = windowColor;
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", windowColor * 0.5f);
-            return mat;
-        }
-
-        private Material CreateWindowDarkMaterial()
-        {
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = new Color(0.02f, 0.02f, 0.03f);
-            return mat;
-        }
-
-        private Material CreateBillboardMaterial()
-        {
-            Color billboardColor = neonColors[Random.Range(0, neonColors.Length)];
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = billboardColor;
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", billboardColor * 2f);
-            return mat;
-        }
     }
 }

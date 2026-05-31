@@ -17,6 +17,14 @@ namespace NeonSerpent.Procedural.Audio
         private AudioSource[] _audioSources;
         private int _nextSourceIndex;
 
+        public int AudioSourceCount => _audioSources?.Length ?? 0;
+        public bool HasAudioPool => AudioSourceCount > 0;
+
+        public void EnsureAudioPool()
+        {
+            EnsureAudioSources();
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -26,15 +34,7 @@ namespace NeonSerpent.Procedural.Audio
             }
             Instance = this;
 
-            // Create audio source pool
-            _audioSources = new AudioSource[maxAudioSources];
-            for (int i = 0; i < maxAudioSources; i++)
-            {
-                var source = gameObject.AddComponent<AudioSource>();
-                source.playOnAwake = false;
-                source.spatialBlend = 0.5f; // Semi-3D
-                _audioSources[i] = source;
-            }
+            EnsureAudioSources();
         }
 
         // ── SFX Playback ──
@@ -263,6 +263,8 @@ namespace NeonSerpent.Procedural.Audio
         {
             if (clip == null) return;
 
+            EnsureAudioSources();
+
             AudioSource source = GetAvailableSource();
             if (source == null) return;
 
@@ -275,21 +277,39 @@ namespace NeonSerpent.Procedural.Audio
 
         private AudioSource GetAvailableSource()
         {
+            if (_audioSources == null || _audioSources.Length == 0) return null;
+
             // Find a source that's not playing
-            for (int i = 0; i < maxAudioSources; i++)
+            for (int i = 0; i < _audioSources.Length; i++)
             {
-                int index = (_nextSourceIndex + i) % maxAudioSources;
+                int index = (_nextSourceIndex + i) % _audioSources.Length;
                 if (!_audioSources[index].isPlaying)
                 {
-                    _nextSourceIndex = (index + 1) % maxAudioSources;
+                    _nextSourceIndex = (index + 1) % _audioSources.Length;
                     return _audioSources[index];
                 }
             }
 
             // All sources busy - steal the oldest one
             var source = _audioSources[_nextSourceIndex];
-            _nextSourceIndex = (_nextSourceIndex + 1) % maxAudioSources;
+            _nextSourceIndex = (_nextSourceIndex + 1) % _audioSources.Length;
             return source;
+        }
+
+        private void EnsureAudioSources()
+        {
+            if (_audioSources != null && _audioSources.Length > 0)
+                return;
+
+            int sourceCount = Mathf.Max(1, maxAudioSources);
+            _audioSources = new AudioSource[sourceCount];
+            for (int i = 0; i < sourceCount; i++)
+            {
+                var source = gameObject.AddComponent<AudioSource>();
+                source.playOnAwake = false;
+                source.spatialBlend = 0.5f;
+                _audioSources[i] = source;
+            }
         }
     }
 }

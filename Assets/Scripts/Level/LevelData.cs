@@ -7,7 +7,7 @@ namespace NeonSerpent.Level
     /// ScriptableObject containing level metadata. The actual geometry
     /// is stored separately in JSON to allow editor import/export.
     /// </summary>
-    [CreateAssetMenu(fileName = "NewLevel", menuName = "NEON SERPENT/Level Data")]
+    [CreateAssetMenu(fileName = "NewLevel", menuName = "POLY SERPENT/Level Data")]
     public class LevelData : ScriptableObject
     {
         [Header("Identity")]
@@ -70,7 +70,7 @@ namespace NeonSerpent.Level
     /// </summary>
     public enum ZoneType
     {
-        NeonCity,
+        PolyCity,
         DataCore,
         AbyssRift,
         CoreFurnace,
@@ -83,7 +83,7 @@ namespace NeonSerpent.Level
         {
             return zone switch
             {
-                ZoneType.NeonCity => "霓虹都市",
+                ZoneType.PolyCity => "低模都市",
                 ZoneType.DataCore => "数据核心",
                 ZoneType.AbyssRift => "深渊裂隙",
                 ZoneType.CoreFurnace => "核心熔炉",
@@ -96,7 +96,7 @@ namespace NeonSerpent.Level
         {
             return zone switch
             {
-                ZoneType.NeonCity => 15,
+                ZoneType.PolyCity => 15,
                 ZoneType.DataCore => 15,
                 ZoneType.AbyssRift => 20,
                 ZoneType.CoreFurnace => 15,
@@ -109,7 +109,7 @@ namespace NeonSerpent.Level
         {
             return zone switch
             {
-                ZoneType.NeonCity => 1,
+                ZoneType.PolyCity => 1,
                 ZoneType.DataCore => 16,
                 ZoneType.AbyssRift => 31,
                 ZoneType.CoreFurnace => 51,
@@ -121,7 +121,7 @@ namespace NeonSerpent.Level
 
     public enum EnvironmentTheme
     {
-        NeonCity,
+        PolyCity,
         DataCore,
         AbyssRift,
         CoreFurnace,

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using NeonSerpent.Core;
 
 namespace NeonSerpent.Procedural.Art.Environment
 {
@@ -10,8 +11,8 @@ namespace NeonSerpent.Procedural.Art.Environment
     public class ProceduralCityGenerator : MonoBehaviour
     {
         [Header("City Grid")]
-        [SerializeField] private int cityBlocksX = 10;
-        [SerializeField] private int cityBlocksZ = 10;
+        public int cityBlocksX = 10;
+        public int cityBlocksZ = 10;
         [SerializeField] private float blockSize = 50f;
         [SerializeField] private float streetWidth = 15f;
 
@@ -26,8 +27,8 @@ namespace NeonSerpent.Procedural.Art.Environment
 
         [Header("Atmosphere")]
         [SerializeField] private bool generateFog = true;
-        [SerializeField] private Color fogColor = new Color(0.02f, 0.02f, 0.05f);
-        [SerializeField] private float fogDensity = 0.02f;
+        [SerializeField] private Color fogColor = new Color(0.6f, 0.65f, 0.7f);
+        [SerializeField] private float fogDensity = 0.008f;
         [SerializeField] private bool generateRain = true;
         [SerializeField] private float rainChance = 0.3f;
 
@@ -36,8 +37,8 @@ namespace NeonSerpent.Procedural.Art.Environment
         [SerializeField] private float groundHeight = 0f;
 
         [Header("References")]
-        [SerializeField] private ProceduralBuildingGenerator buildingGenerator;
-        [SerializeField] private ProceduralNeonSignGenerator signGenerator;
+        public ProceduralBuildingGenerator buildingGenerator;
+
 
         private List<GameObject> _cityObjects = new List<GameObject>();
         private bool _hasRain;
@@ -87,9 +88,6 @@ namespace NeonSerpent.Procedural.Art.Environment
                 CreateRainEffect();
             }
 
-            // Generate neon signs on streets
-            GenerateStreetSigns();
-
             Debug.Log($"[ProceduralCityGenerator] Generated city with {_cityObjects.Count} objects.");
         }
 
@@ -101,7 +99,7 @@ namespace NeonSerpent.Procedural.Art.Environment
             foreach (var obj in _cityObjects)
             {
                 if (obj != null)
-                    Destroy(obj);
+                    DestroyGeneratedObject(obj);
             }
             _cityObjects.Clear();
 
@@ -133,7 +131,7 @@ namespace NeonSerpent.Procedural.Art.Environment
                 renderer.material = CreateGroundMaterial();
             }
 
-            Destroy(ground.GetComponent<Collider>());
+            DestroyGeneratedObject(ground.GetComponent<Collider>());
             _cityObjects.Add(ground);
         }
 
@@ -239,43 +237,24 @@ namespace NeonSerpent.Procedural.Art.Environment
 
             // Rain material
             var renderer = rainGO.GetComponent<ParticleSystemRenderer>();
-            renderer.material = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            renderer.material.color = new Color(0.7f, 0.8f, 1f, 0.3f);
+            renderer.material = PolyMaterials.CreateParticleUnlit(new Color(0.7f, 0.8f, 1f, 0.3f));
 
             _cityObjects.Add(rainGO);
         }
 
-        private void GenerateStreetSigns()
-        {
-            if (signGenerator == null) return;
-
-            // Place signs along streets between blocks
-            for (int x = 0; x < cityBlocksX; x++)
-            {
-                for (int z = 0; z < cityBlocksZ; z++)
-                {
-                    if (Random.value > 0.3f) continue;
-
-                    Vector3 signPos = new Vector3(
-                        x * blockSize + Random.Range(-blockSize * 0.4f, blockSize * 0.4f),
-                        groundHeight,
-                        z * blockSize + Random.Range(-blockSize * 0.4f, blockSize * 0.4f)
-                    );
-
-                    var sign = signGenerator.GenerateSign(signPos);
-                    if (sign != null)
-                        _cityObjects.Add(sign);
-                }
-            }
-        }
-
         private Material CreateGroundMaterial()
         {
-            Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = new Color(0.03f, 0.03f, 0.04f);
-            mat.SetFloat("_Smoothness", 0.9f);
-            mat.SetFloat("_Metallic", 0.1f);
-            return mat;
+            return PolyMaterials.CreateUnlit(new Color(0.25f, 0.3f, 0.25f));
+        }
+
+        private void DestroyGeneratedObject(UnityEngine.Object obj)
+        {
+            if (obj == null) return;
+
+            if (Application.isPlaying)
+                Destroy(obj);
+            else
+                DestroyImmediate(obj);
         }
     }
 }

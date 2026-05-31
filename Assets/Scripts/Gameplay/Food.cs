@@ -1,10 +1,12 @@
 using UnityEngine;
+using NeonSerpent.Core;
+using NeonSerpent.Player;
 
 namespace NeonSerpent.Gameplay
 {
     /// <summary>
     /// Collectible energy core. Pulses with light and particles.
-    /// Triggers collection when the snake head enters its trigger volume.
+    /// Detects snake head proximity directly (CharacterController doesn't fire OnTriggerEnter).
     /// </summary>
     [RequireComponent(typeof(SphereCollider))]
     public class Food : MonoBehaviour
@@ -20,13 +22,16 @@ namespace NeonSerpent.Gameplay
 
         private Vector3 _baseScale;
         private bool _collected;
+        private float _collectRadius = 0.8f;
 
         public System.Action<Food> OnCollected;
 
         private void Awake()
         {
             _baseScale = transform.localScale;
-            GetComponent<SphereCollider>().isTrigger = true;
+            var col = GetComponent<SphereCollider>();
+            col.isTrigger = true;
+            _collectRadius = col.radius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.y, transform.lossyScale.z) * 1.2f;
         }
 
         private void Update()
@@ -39,14 +44,34 @@ namespace NeonSerpent.Gameplay
 
             // Slow rotation
             transform.Rotate(Vector3.up, 90f * Time.deltaTime, Space.World);
+
+            // Manual detection: CharacterController.Move() doesn't fire OnTriggerEnter
+            CheckSnakeHeadProximity();
         }
 
+        private void CheckSnakeHeadProximity()
+        {
+            // Search broadly since snake head may be on default layer
+            var hits = Physics.OverlapSphere(transform.position, _collectRadius);
+            foreach (var hit in hits)
+            {
+                var head = hit.GetComponent<SnakeHeadController>();
+                if (head != null)
+                {
+                    Collect();
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Legacy support: if PlayerInput or Rigidbody-based player triggers this.
+        /// </summary>
         private void OnTriggerEnter(Collider other)
         {
             if (_collected) return;
-
-            // Check if collider is snake head
-            if (other.CompareTag("SnakeHead"))
+            var head = other.GetComponent<SnakeHeadController>();
+            if (head != null)
             {
                 Collect();
             }
@@ -78,7 +103,7 @@ namespace NeonSerpent.Gameplay
             var renderer = GetComponent<Renderer>();
             if (renderer != null)
             {
-                renderer.material.SetColor("_EmissionColor", color * 2f);
+                renderer.material.color = color;
             }
         }
     }

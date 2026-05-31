@@ -115,8 +115,8 @@ namespace NeonSerpent.Progression
                     return false;
             }
 
-            // Check zone requirement
-            if (condition.requiredZone != ZoneType.NeonCity || condition.requireSpecificZone)
+            // Check zone requirement (only when requireSpecificZone is true)
+            if (condition.requireSpecificZone)
             {
                 if (completedLevel.zone != condition.requiredZone)
                     return false;
@@ -176,7 +176,7 @@ namespace NeonSerpent.Progression
     public class UnlockableSkin : UnlockableItem
     {
         public Material skinMaterial;
-        public Color emissionColor = Color.cyan;
+        public Color accentColor = Color.cyan;
         public ParticleSystem trailEffect;
     }
 
@@ -199,7 +199,7 @@ namespace NeonSerpent.Progression
     public class UnlockCondition
     {
         public string requiredLevelId;
-        public ZoneType requiredZone = ZoneType.NeonCity;
+        public ZoneType requiredZone = ZoneType.PolyCity;
         public bool requireSpecificZone = false;
         public Rank requiredRank = Rank.None;
         public int requiredLevelCompletions = 1;

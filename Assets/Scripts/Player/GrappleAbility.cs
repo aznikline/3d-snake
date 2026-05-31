@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using NeonSerpent.Core;
+using NeonSerpent.Procedural.Audio;
 
 namespace NeonSerpent.Player
 {
@@ -13,7 +14,7 @@ namespace NeonSerpent.Player
         [Header("Targeting")]
         [SerializeField] private float maxGrappleDistance = 30f;
         [SerializeField] private float targetAngleThreshold = 30f;
-        [SerializeField] private LayerMask grappleLayer;
+        public LayerMask grappleLayer;
 
         [Header("Flight")]
         [SerializeField] private float flightDuration = GameConstants.GrappleDuration;
@@ -57,6 +58,7 @@ namespace NeonSerpent.Player
                     return false; // Obstructed
             }
 
+            ProceduralSFXSystem.Instance?.PlayGrapple(transform.position);
             StartCoroutine(GrappleFlight(target));
             return true;
         }
