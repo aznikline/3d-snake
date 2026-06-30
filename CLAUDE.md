@@ -1,6 +1,6 @@
 # NEON SERPENT — Claude Code Game Studios
 
-3D First-Person Cyberpunk Snake Game. Built with Unity 6000.4.8f1 (Unity 6), Universal Render Pipeline.
+3D First-Person Low-Poly Snake Game. Built with Unity 6000.4.8f1 (Unity 6), Universal Render Pipeline.
 
 ## Technology Stack
 

@@ -1,6 +1,6 @@
 # NEON SERPENT
 
-> A first-person 3D snake game set in a cyberpunk neon void. Built with Unity 6 and the Universal Render Pipeline. **Zero external assets** — all art, audio, and UI are generated procedurally at runtime.
+> A first-person 3D snake game in a low-poly geometric visual style. Built with Unity 6 and the Universal Render Pipeline. **Zero external assets** — all art, audio, and UI are generated procedurally at runtime.
 
 **Status:** Polish stage · **Version:** 0.1.0 (Build 1) · **Engine:** Unity 6000.4.8f1 (Unity 6, URP)
 
@@ -46,7 +46,7 @@ The entire visual and audio identity is **synthesized in code** — no textures,
 - **Poly-style shaders** — `PolyLit` (toon/flat), `PolyGrid`, `PolyParticle`, `PolyUI`
 - **Adaptive music** — stem-based, intensity-driven (ambient 90 BPM ↔ drum-and-bass 174 BPM), with crossfades
 - **Synthesized SFX** — runtime audio synthesis, no audio clips
-- **Procedural materials** — neon emission palette centralized in `PolyMaterials`
+- **Procedural materials** — `PolyPalette` color system centralized in `PolyMaterials`; emission reserved as an accent for gameplay-critical objects
 
 ---
 
